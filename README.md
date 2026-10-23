@@ -1,93 +1,67 @@
-# nmea-xdr
-WeeWX service that decodes NMEA 0183 "XDR" sentences and adds values
-to the WeeWX data stream.
+# NMEA XDR for WeeWX
 
-Tested on a [Dracal USB-BAR20-N](https://www.dracal.com/store/products/usb_bar20_n/index.php).
-This is an interesting little instrument because it can add accurate barometric pressure to a data
-stream, making it perfect for those who are collecting data using a software-defined radio (SDR).
+Add pressure or temperature from serial NMEA 0183 XDR sentences to an existing
+WeeWX station's LOOP packets. This is an additional service; keep your weather
+station driver. Upstream reports use with the Dracal USB-BAR20-N barometer.
 
-## Installation instructions
+Copyright 2019-2020 Tom Keffer. Distributed under [GPLv3](LICENSE.txt).
 
-1. Download and install the extension
+This repository mirrors upstream source. Install the separately repaired catalog
+archive **0.10.post1** below for the maintained WeeWX 5 distribution.
+A branch download does not contain those catalog repairs.
 
-    ```shell
-    cd /home/weewx
-    wget https://github.com/tkeffer/weewx-nmea-xdr/archive/nmea-xdr-0.1.0.tar.gz
-    wee_extension --install=nmea-xdr-0.1.0.tar.gz
-    ```
+## Install
 
-2. Edit the new stanza `[XDR]` to reflect your situation. Here's an example:
+The catalog release requires Python >=3.10,<3.15 and WeeWX >=5.5,<6.
 
-   ```ini
-    [XDR]
-        port = /dev/ttyUSB0
-    
-        # Map from weewx names to sensor names. Only these types will be processed.
-        # Typical sensor map:
-        [[sensor_map]]
-            pressure = P    # Raw, station pressure
-    ```
-    This example most relies on the defaults, although it adds an explicity device
-    port where the NMEA device can be found (`/dev/ttyUSB0`).
+Install `pyserial` in the WeeWX Python environment:
 
-   It maps only one observation type, `pressure`, to the incoming XDR data, `P`.
+```sh
+python -m pip install pyserial
+```
 
-3. Restart WeeWX. For example:
+Use the `weectl` from your WeeWX Python environment:
 
-   ```shell
-   sudo systemctl stop weewx
-   sudo systemctl start weewx
-   ```
+```sh
+weectl extension install https://github.com/weewx-packages/catalog/releases/download/nmea-xdr/v0.10.post1/nmea-xdr-0.10.post1.tar.gz --config=/path/to/weewx.conf
+```
 
-4. With every LOOP packet, the queue of NMEA sentences will be drained. All data listed
-in the sensor map will be parsed and added to the LOOP packet.
+Replace `/path/to/weewx.conf` with your station configuration. Stock WeeWX 5
+accepts this fixed URL or a downloaded copy of the same archive. No catalog
+integration is required. Restart WeeWX yourself after configuration changes.
 
+## Select the serial data
 
-## Manual installation instructions
+The installer registers `user.nmea-xdr.XDR` in
+`[Engine][[Services]] data_services`. Preserve the other services in that list.
+The module filename contains a hyphen; do not replace the service name with a
+filename or `nmea-xdr.py`.
 
+Edit the installed stanza to match the device:
 
+```ini
+[XDR]
+    port = /dev/ttyACM0
+    baudrate = 9600
+    timeout = 5
+    max_packets = 5
+    [[sensor_map]]
+        pressure = P
+```
 
-1. Include a stanza in your weewx.conf configuration file:
+`P` selects the XDR transducer type, not its sensor name. Add `outTemp = C` only
+if you want temperature readings to replace your station's `outTemp`. The
+service supports Celsius, Fahrenheit and bar input units, converts them to the
+LOOP packet's unit system and discards sentences with invalid checksums.
 
-    ```ini
-    [XDR]
-        port = /dev/ttyACM0         # Default is '/dev/ttyACM0'
-        baudrate = 9600             # Default is '9600'
-        timeout = 5                 # How long to wait for an XDR packet. Default is 5
-        max_packets = 5             # Max number of packets to process during a LOOP event. Default is 5
-    
-        # Map from weewx names to sensor names. Only these types will be processed.
-        # Typical sensor map:
-        [[sensor_map]]
-            pressure = P    # Raw, station pressure
-            outTemp = C     # Temperature
-    ```
+Give the WeeWX service account access to the port. On each LOOP event the service
+processes queued sentences, keeping at most `max_packets` pending sentences.
+It overwrites mapped observations in that packet. It neither polls a cloud API
+nor creates LOOP packets when the main station is silent. Additional observation
+names need matching archive columns. No standalone CLI or hardware check is
+provided by this documentation refresh.
 
-2. Add the XDR service to the list of data_services to be run:
+The installed extension is named `xdr`. Upstream source and history:
+[tkeffer/weewx-nmea-xdr](https://github.com/tkeffer/weewx-nmea-xdr).
 
-    ```ini
-    [Engine]
-      [[Services]]
-        ...
-        data_services = nmea-xdr.py
-    ```
-
-2. Put this file (nmea-xdr.py) in your WeeWX user subdirectory.
-For example, if you installed using setup.py,
-
-    ```shell
-    cp nmea-xdr.py /home/weewx/bin/user
-   ```
-    
-4. Restart WeeWX. For example:
-
-   ```shell
-   sudo systemctl stop weewx
-   sudo systemctl start weewx
-   ```
-
-5. With every LOOP packet, the queue of NMEA sentences will be drained. All data listed
-in the sensor map will be parsed and added to the LOOP packet.
- 
-
-
+<!-- Documentation updated 2026-10-23 by weewx-packages. -->
