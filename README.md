@@ -12,13 +12,26 @@ A branch download does not contain those catalog repairs.
 
 ## Install
 
+An existing WeeWX station is required. Replace `/path/to/weewx.conf`
+with its configuration file before running the commands.
+
 The catalog release requires Python >=3.10,<3.15 and WeeWX >=5.5,<6.
+
+Before running the commands, activate the existing virtual environment that
+runs your WeeWX service. Both `python` and `weectl` must come from that
+environment. For an OS-packaged WeeWX installation, use compatible distribution
+packages instead, or migrate WeeWX and its service to a virtual environment
+first. Installing into an unrelated virtual environment will not supply the
+running service with dependencies.
 
 Install `pyserial` in the WeeWX Python environment:
 
 ```sh
-python -m pip install pyserial
+python -m pip install 'pyserial==3.5'
 ```
+
+The distribution is named `pyserial`; it provides the `serial` import.
+Do not install the different package named `serial`.
 
 Use the `weectl` from your WeeWX Python environment:
 
@@ -26,9 +39,9 @@ Use the `weectl` from your WeeWX Python environment:
 weectl extension install https://github.com/weewx-packages/catalog/releases/download/nmea-xdr/v0.10.post1/nmea-xdr-0.10.post1.tar.gz --config=/path/to/weewx.conf
 ```
 
-Replace `/path/to/weewx.conf` with your station configuration. Stock WeeWX 5
-accepts this fixed URL or a downloaded copy of the same archive. No catalog
-integration is required. Restart WeeWX yourself after configuration changes.
+Stock WeeWX 5 accepts this fixed URL or a downloaded copy of the same archive.
+No catalog integration is required. Restart WeeWX yourself after configuration
+changes.
 
 ## Select the serial data
 
